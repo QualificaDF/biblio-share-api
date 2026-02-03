@@ -165,30 +165,42 @@ def listar_emprestados():
     return jsonify(resultado), 200
 
 
-
-@biblioteca_bp.route("/membros/<int:membro_id>/historico", methods=["GET"])
-def historico_membro(membro_id):
+@biblioteca_bp.route("/membros/status", methods=["GET"])
+def listar_status_membros():
     conn = conectar()
     cursor = conn.cursor()
 
+    
+    
     cursor.execute("""
-        SELECT id, titulo, autor
-        FROM livros
-        WHERE membro_id = ?
-    """, (membro_id,))
+        SELECT 
+            membros.id, 
+            membros.nome, 
+            COUNT(livros.id) AS total_livros
+        FROM membros
+        LEFT JOIN livros ON membros.id = livros.membro_id
+        GROUP BY membros.id
+    """)
 
-    livros = cursor.fetchall()
+    membros = cursor.fetchall()
     conn.close()
 
     resultado = []
-    for livro in livros:
+    for m in membros:
+        membro_id = m[0]
+        nome = m[1]
+        qtd_livros = m[2]
+
         resultado.append({
-            "id": livro[0],
-            "titulo": livro[1],
-            "autor": livro[2]
+            "id": membro_id,
+            "nome": nome,
+            "quantidade_livros": qtd_livros,
+            "status": "Disponível" if qtd_livros == 0 else f"Em posse de {qtd_livros} livro(s)"
         })
 
     return jsonify(resultado), 200
+
+
 
 
 
